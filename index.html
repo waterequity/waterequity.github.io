@@ -11,6 +11,17 @@
     <!-- d3 -->
     <script type="text/javascript" src="js/d3.js"></script>
 
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="css/clean-blog.min.css" rel="stylesheet">
+
+    <!-- Custom Fonts -->
+    <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+
     <style type="text/css">
       svg {
         font: 10px sans-serif;
@@ -46,7 +57,7 @@
       }
 
       #map {
-        width: 500px;
+        width: 600px;
         height: 600px;
       }
 
@@ -75,205 +86,37 @@
         z-index: 5;
       }
     </style>
-    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=visualization">
-    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=visualization"></script>
 </head>
 <body>
-    <!-- Page Content -->
-    <div id="page-content-wrapper">
-        <div class="container-fluid">
-          <div id="label"></div>      
-          <div class="container" id="chartContainer1"></div>
-          <div id="map"></div>
-          <script type="text/javascript">
+  <header class="intro-header" style="background-image: url('img/background.jpeg')">
+      <div class="container">
+          <div class="row">
+              <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                  <div class="page-heading">
+                    <h1 style="text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black; color:#E6E6E6;">Water</h1>
+                    <hr class="small">
+                    <span class="subheading">Who should do the most rationing ?</span>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </header>
 
-            var map, heatmap;
-            var csvData;
-            var town = new google.maps.MVCArray();
-
-            // Size of the main container with magins
-            var margin = {top: 30, right: 10, bottom: 10, left: 10},
-                width = 1300 - margin.left - margin.right,
-                height = 500 - margin.top - margin.bottom;
-
-            // Scale to place the dimensions
-            var x = d3.scale.ordinal().rangePoints([0, width], 1);
-            // Scale for each of the dimensions
-            var  y = {};
-            // Line 
-            var line = d3.svg.line();
-            // Dimension axis
-            var axis = d3.svg.axis().orient("left");
-            // Variable holding a subgroup of lines in gray
-            var background;
-            // Variable holding a subgroup of lines in color
-            var foreground;
-            // Color scale
-            var color = d3.scale.category20();
-            // A bunch of crap (--> is it useful ?)
-            var map;
-            var heatmap, binList;
-            var town = new Array();
-
-            // Add a SVG which will contain the parallel coordinates
-            var svg = d3.select("#chartContainer1").append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-              .append("g")
-                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-            // Add a SVG to hold the selection text (--> replace text with a table under parallel coord.)
-            var svgtext = d3.select("#label").append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", 50 + margin.top + margin.bottom)
-              .append("g")
-                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-            // Load the data
-            d3.csv("data.csv", function(error, data) {
-
-              // Creating a new variable to hold the visibility status and colors
-              data.forEach(function(d, i) { 
-                d.visible = true;
-                d.color = color(i);
-               });
-
-              // Saving data in a global scope (use outside of d3.csv)
-              csvData = data;
-
-              // Extract the list of dimensions and create a scale for each.
-              x.domain(dimensions = d3.keys(data[0]).filter(function(d) {
-                // Avoid dimensions with the following names
-                return d != "name" &&  d != "visible" && d != "color" && d != "lat" && d !="long" && 
-                (y[d] = d3.scale.linear()
-                // Get the min and max to scale the domain
-                    .domain(d3.extent(data, function(p) { return +p[d]; }))
-                    .range([height, 0]));
-              }));
-
-              // Add grey background lines for context.
-              background = svg.append("g")
-                  .attr("class", "background")
-                .selectAll("path")
-                  .data(data)
-                .enter().append("path")
-                  .attr("d", path);
-
-              // Add colored foreground lines for focus.
-              foreground = svg.append("g")
-                  .attr("class", "foreground")
-                .selectAll("path")
-                  .data(data)
-                .enter().append("path")
-                  .attr("d", path)
-                  .style('stroke-width', '1.5')
-                  .style('stroke', function(d) { return d.color; })
-                  // Add text when mouseover
-                  .on("mouseover", function(d){
-                     svgtext.select("text").remove();
-                     svgtext.append("text")
-                    .attr("font-size", '150%')
-                    .attr("x", '50px')
-                    .attr("y", '25px')
-                    .text( function () { return String(d.name); });
-                  });
-
-              // Add a group element for each dimension.
-              var g = svg.selectAll(".dimension")
-                  .data(dimensions)
-                .enter().append("g")
-                  .attr("class", "dimension")
-                  .attr("transform", function(d) { return "translate(" + x(d) + ")"; });
-
-              // Add an axis and title.
-              g.append("g")
-                  .attr("class", "axis")
-                  .each(function(d) { d3.select(this).call(axis.scale(y[d])); })
-                .append("text")
-                  .style("text-anchor", "middle")
-                  .attr("y", -9)
-                  .text(function(d) { return d; });
-
-              // Add and store a brush for each axis.
-              g.append("g")
-                  .attr("class", "brush")
-                  .each(function(d) { d3.select(this)
-                    .call(y[d].brush = d3.svg.brush().y(y[d])
-                    .on("brush", brush).on("brushend", brushend)); })
-                .selectAll("rect")
-                  .attr("x", -8)
-                  .attr("width", 16);
-
-              initialize();
-            });
-      
-            function path(d) {
-              return line(dimensions.map(function(p) { return [x(p), y[p](d[p])]; }));
-            }
-
-            // Handles a brush event, toggling the display of foreground lines.
-            function brush() {
-              // Get all the active brushes (the one that are not empty)
-              var actives = dimensions.filter(function(p) { return !y[p].brush.empty(); });
-              // Get the min and max covered by active brushes
-              var extents = actives.map(function(p) { return y[p].brush.extent(); });
-
-              // For all the foreground lines change the display property
-              foreground.style("display", function(d) {
-                // True only if every active brush cross the line
-                bool = actives.every(function(p, i) {
-                  return extents[i][0] <= d[p] && d[p] <= extents[i][1];
-                }) ? null : "none";
-                if (bool == "none"){
-                  d.visible = false;
-                }
-                else {
-                  d.visible = true;
-                }
-                return bool;
-              }); 
-            }
-
-            // Once the brush event is finished (mouse released)
-            function brushend() {
-              // Empty town array
-              while(town.length > 0) {
-                    town.pop();
-                }
-
-              for (i = 0; i < csvData.length; i++) {
-                if (csvData[i].visible) {
-                  town.push(new google.maps.LatLng(csvData[i].lat, csvData[i].long));
-                }
-              }
-
-              heatmap.setData(town);
-            }
-
-            function initialize() {
-                map = new google.maps.Map(document.getElementById('map'), {
-                zoom: 6,
-                center: {lat: 36.775, lng: -119.434},
-                mapTypeId: google.maps.MapTypeId.TERRAIN
-              });
-
-              csvData.forEach(function(d){
-                   town.push(new google.maps.LatLng(d.lat, d.long))
-              });
-
-              heatmap = new google.maps.visualization.HeatmapLayer({
-                data: town,
-                map: map
-              });
-              
-              heatmap.set('radius', 15)
-              heatmap.set('opacity', 0.8)
-            }
-
-          </script>
-        </div>
+    <!-- Main Content -->
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-12 col-md-12" id="mainContainer">
+        <h1>Water equity in California</h1>
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+        <div id="label"></div>      
+        <div id="chartContainer1"></div>
+        <div id="map" style="border:6px solid #E4E4E4;"></div>
+        <script src="waterequity.js"></script>
+      </div>
     </div>
-    <script src="js/jquery.js"></script>
-    <script src="js/bootstrap.min.js"></script>  
+  </div>
+  <script src="js/jquery.js"></script>
+  <script src="js/bootstrap.min.js"></script>  
 </body>
 </html>
