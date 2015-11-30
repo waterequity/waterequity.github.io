@@ -55,7 +55,7 @@ d3.csv("data.csv", function(error, data) {
   // Extract the list of dimensions and create a scale for each.
   x.domain(dimensions = d3.keys(data[0]).filter(function(d) {
     // Avoid dimensions with the following names
-    return d != "name" &&  d != "visible" && d != "color" && d != "lat" && d !="long" && 
+    return d != "name" &&  d != "visible" && d != "color" && d != "lat" && d !="long" && d != "lat2" && d !="long2" &&
     (y[d] = d3.scale.linear()
     // Get the min and max to scale the domain
         .domain(d3.extent(data, function(p) { return +p[d]; }))
