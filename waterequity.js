@@ -1,9 +1,11 @@
-var map, heatmap;
+// Some global scope variables
 var csvData;
-var town = new google.maps.MVCArray();
+var map;
+var heatmap, binList;
+var town = new Array();
 
 // Size of the main container with magins
-var margin = {top: 30, right: 10, bottom: 10, left: 10},
+var margin = {top: 30, right: 10, bottom: 50, left: 10},
     width = parseInt(d3.select('#mainContainer').style('width')) - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom;
 
@@ -21,10 +23,6 @@ var background;
 var foreground;
 // Color scale
 var color = d3.scale.category20();
-// A bunch of crap (--> is it useful ?)
-var map;
-var heatmap, binList;
-var town = new Array();
 
 // Add a SVG which will contain the parallel coordinates
 var svg = d3.select("#chartContainer1").append("svg")
@@ -35,10 +33,21 @@ var svg = d3.select("#chartContainer1").append("svg")
 
 // Add a SVG to hold the selection text (--> replace text with a table under parallel coord.)
 var svgtext = d3.select("#label").append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", 50 + margin.top + margin.bottom)
-  .append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  .attr("width", width + margin.left + margin.right)
+  .attr("height", 50)
+.append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+// Add a scale to show the bar
+var xSelected = d3.scale.ordinal().range([0, width/2]).domain([0, 100]);
+// Add a space to show the percentage of data selected 
+// dataSelectedInit();
+
+// Add a text hint
+svg.append("text")      
+    .attr("y", height + margin.bottom/2 - 5)
+    .attr("x", 10)
+    .text("Click me!");
 
 // Load the data
 d3.csv("data.csv", function(error, data) {
@@ -85,8 +94,8 @@ d3.csv("data.csv", function(error, data) {
          svgtext.append("text")
         .attr("font-size", '150%')
         .attr("x", '50px')
-        .attr("y", '25px')
-        .text( function () { return String(d.name); });
+        .attr("y", '5px')
+        .text( function () { return 'Line name: ' + String(d.name); });
       });
 
   // Add a group element for each dimension.
@@ -115,6 +124,17 @@ d3.csv("data.csv", function(error, data) {
       .attr("x", -8)
       .attr("width", 16);
 
+  // Add a rectange to toggle dimensions
+  g.append("rect")
+    .attr("class", "rectLegend")
+    .attr("x", -15)
+    .attr("y", height + margin.bottom/2)
+    .attr("width", 30)
+    .attr("height", 20)
+    .attr("stroke", "#000000")
+    .attr("fill", "#F1F1F2")
+    .on("click", histoUpdate);
+
   initialize();
 });
 
@@ -135,6 +155,7 @@ function brush() {
     bool = actives.every(function(p, i) {
       return extents[i][0] <= d[p] && d[p] <= extents[i][1];
     }) ? null : "none";
+    
     if (bool == "none"){
       d.visible = false;
     }
@@ -147,10 +168,14 @@ function brush() {
 
 // Once the brush event is finished (mouse released)
 function brushend() {
+  mapUpdate();
+}
+
+function mapUpdate() {
   // Empty town array
   while(town.length > 0) {
         town.pop();
-    }
+  }
 
   for (i = 0; i < csvData.length; i++) {
     if (csvData[i].visible) {
@@ -159,6 +184,46 @@ function brushend() {
   }
 
   heatmap.setData(town);
+}
+
+function histoUpdate(d) {
+  d3.selectAll(".rectLegend")
+    .attr("fill", "#F1F1F2");
+
+  d3.select(this)
+    .attr("fill", "#99cfff");
+
+}
+
+function dataSelectedInit() {
+  // Add a SVG to hold the bar showing the percent of data selected
+  var svgSlected = d3.select("#selected").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", 50)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  // Add a text hint
+  svgSlected.append("text")      
+      .attr("y", 5)
+      .attr("x", 5)
+      .text("Percentage of data selected (%)");
+
+  svgSlected.append("rect")
+    .attr("x", 5-1)
+    .attr("y", 10-1)
+    .attr("width", xSelected(100) + 1)
+    .attr("height", 30+1)
+    .attr("stroke", "#000000")
+    .attr("fill", "##F1F1F2") 
+
+  // svgSlected.append("rect")
+  //   .attr("class", "rectPercent")
+  //   .attr("x", 5)
+  //   .attr("y", 10)
+  //   .attr("width", xSelected(70))
+  //   .attr("height", 30)
+  //   .attr("fill", "##ff751a"); 
 }
 
 function initialize() {
