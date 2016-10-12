@@ -40,6 +40,7 @@ var svgtext = d3.select("#label").append("svg")
 
 // Add a scale to show the bar
 var xSelected = d3.scale.ordinal().range([0, width/2]).domain([0, 100]);
+
 // Add a space to show the percentage of data selected 
 // dataSelectedInit();
 
@@ -49,6 +50,25 @@ svg.append("text")
     .attr("x", 10)
     .text("Click me!");
 
+// Add the necessary for the histograms
+var xhisto = d3.scale.linear()
+    .range([0, width]);
+
+// Generate a histogram using twenty uniformly-spaced bins.
+var xAxisHisto = d3.svg.axis()
+    .scale(xhisto)
+    .orient("bottom");
+
+var svgHisto = d3.select("#histogram").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+svgHisto.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxisHisto);
 // Load the data
 d3.csv("data.csv", function(error, data) {
 
@@ -193,6 +213,78 @@ function histoUpdate(d) {
   d3.select(this)
     .attr("fill", "#99cfff");
 
+  getHistoData(this.__data__);
+
+}
+
+
+function getHistoData(name) {
+  var greyData = []
+  var blueData = []
+
+  csvData.forEach(function(d, i) { 
+      if (d.visible == true){
+        blueData.push(d[name])
+      }
+      greyData.push(d[name])
+   });
+
+  svgHisto.selectAll('.bar').remove()
+  svgHisto.selectAll('.bar2').remove()
+
+  var greyData = d3.layout.histogram()
+      .bins(xhisto.ticks(20))
+      (greyData);
+
+  var blueData = d3.layout.histogram()
+      .bins(xhisto.ticks(20))
+      (blueData);
+
+  xhisto.domain(d3.extent(greyData, function(d) { return d.x; }));
+  var yhisto = d3.scale.linear()
+      .domain([0, d3.max(greyData, function(d) { return d.y; })])
+      .range([height, 0]);
+
+  var bar = svgHisto.selectAll(".bar")
+      .data(greyData)
+    .enter().append("g")
+      .attr("class", "bar")
+      .attr("transform", function(d) { return "translate(" + xhisto(d.x) + "," + yhisto(d.y) + ")"; });
+
+  bar.append("rect")
+      .attr("x", 1)
+      .attr("width", xhisto(greyData[0].dx) - 1)
+      .attr("height", function(d) { return height - yhisto(d.y); });
+
+  bar.append("text")
+      .attr("dy", ".75em")
+      .attr("y", 6)
+      .attr("x", xhisto(greyData[0].dx) / 2)
+      .attr("text-anchor", "middle")
+      .text(function(d) { return d.y; });
+
+/////////////////////////////////////////////////////////////////////////
+  var bar = svgHisto.selectAll(".bar2")
+      .data(blueData)
+    .enter().append("g")
+      .attr("class", "bar2")
+      .attr("transform", function(d) { return "translate(" + xhisto(d.x) + "," + yhisto(d.y) + ")"; });
+
+  bar.append("rect")
+      .attr("x", 1)
+      .attr("width", x(blueData[0].dx) - 1)
+      .attr("height", function(d) { return height - yhisto(d.y); });
+
+  bar.append("text")
+      .attr("dy", ".75em")
+      .attr("y", 6)
+      .attr("x", xhisto(blueData[0].dx) / 2)
+      .attr("text-anchor", "middle")
+      .text(function(d) { return d.y; });
+
+  svgHisto.select(".x.axis")
+      .transition()
+      .call(xAxisHisto);
 }
 
 function dataSelectedInit() {
