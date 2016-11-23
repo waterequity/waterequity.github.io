@@ -229,16 +229,20 @@ function getHistoData(name) {
   svgHisto.selectAll('.bar2').remove()
 
   greyData = d3.layout.histogram()
-      // .bins(xhisto.ticks(20))
+      // .bins(xhisto.ticks(10))
       (greylist);
 
   blueData = d3.layout.histogram()
-      // .bins(xhisto.ticks(20))
+      // .bins(xhisto.ticks(10))
       (bluelist);
 
   console.log(greyData.length)
 
-  xhisto.domain(d3.extent(greyData, function(d) { return d.x; }));
+  xhisto.domain(d3.extent(greyData, function(d) {
+    if (d.length == 0){
+      return null;
+    }
+    return d.x; }));
   var yhisto = d3.scale.linear()
       .domain([0, d3.max(greyData, function(d) { return d.y; })])
       .range([histo_height, 0]);
